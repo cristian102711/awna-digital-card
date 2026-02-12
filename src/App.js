@@ -31,7 +31,20 @@ function App() {
   });
 
   const handleChange = (e) => {
-    setConfig({ ...config, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    let finalValue = value;
+
+    // Si el usuario está editando el color, forzamos formato Hexadecimal limpio
+    if (name === "colorTema") {
+      // Si no empieza con #, se lo agregamos
+      if (!value.startsWith("#")) {
+        finalValue = "#" + value;
+      }
+      // Limitamos a 7 caracteres (# + 6 hex) para evitar errores
+      finalValue = finalValue.substring(0, 7);
+    }
+
+    setConfig({ ...config, [name]: finalValue });
   };
 
   const handleImageUpload = (e, field) => {
@@ -142,7 +155,30 @@ END:VCARD`;
             <div className="input-group"><label>Facebook User</label><input type="text" name="facebook" value={config.facebook} onChange={handleChange} /></div>
             <div className="input-group"><label>Twitter/X User</label><input type="text" name="twitter" value={config.twitter} onChange={handleChange} /></div>
             
-            <div className="input-group"><label>Color Marca</label><input type="color" name="colorTema" value={config.colorTema} onChange={handleChange} className="input-color" /></div>
+            <div className="input-group full-width">
+  <label>Color de Marca (Hexadecimal)</label>
+  <div style={{ display: 'flex', gap: '8px' }}>
+    {/* Input de texto para escribir el código manualmente */}
+    <input 
+      type="text" 
+      name="colorTema" 
+      value={config.configTema} 
+      onChange={handleChange} 
+      placeholder="#000000"
+      style={{ flex: 1, textTransform: 'uppercase', fontFamily: 'monospace' }}
+    />
+    {/* Selector visual que se sincroniza con el texto */}
+    <input 
+      type="color" 
+      name="colorTema" 
+      value={config.colorTema} 
+      onChange={handleChange} 
+      className="input-color" 
+      style={{ width: '45px', padding: '0', cursor: 'pointer', height: '38px' }}
+    />
+  </div>
+  
+</div>
         </div>
       </div>
 
