@@ -103,7 +103,7 @@ END:VCARD`;
   };
 
   const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(config.direccion)}`;
-  const qrDinamicUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('https://' + config.web)}`;
+  const qrDinamicUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`;
 
   // Iconos SVG
   const Icons = {
@@ -279,11 +279,10 @@ END:VCARD`;
           </button>
         </div>
 
-        {config.web && (
-          <div className="footer-qr">
-            <img src={qrDinamicUrl} alt="QR" className="imagen-qr" />
-          </div>
-        )}
+        {/* --- ASÍ DEBE QUEDAR (Copia y pega esto) --- */}
+        <div className="footer-qr">
+           <img src={qrDinamicUrl} alt="QR" className="imagen-qr" />
+        </div>
 
       </div>
     </div>
