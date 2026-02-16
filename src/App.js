@@ -4,9 +4,17 @@ import './App.css';
 
 function App() {
   
-  // --- 1. ESTADO DE AUTENTICACIÓN ---
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+  // --- 0. DETECTAR SI ES VISITA PÚBLICA (QR) ---
+  const queryParams = new URLSearchParams(window.location.search);
+  const esVistaPublica = queryParams.get('vista') === 'publica';
+
+  // --- 1. ESTADOS ---
+  // Si es vista pública, auto-logueamos al usuario.
+  const [isLoggedIn, setIsLoggedIn] = useState(esVistaPublica); 
   const [mostrarQR, setMostrarQR] = useState(false);
+  
+  // Estado para el menú hamburguesa en móvil
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   // --- 2. CONFIGURACIÓN DE LA TARJETA ---
   const bannerInputRef = useRef(null);
@@ -35,13 +43,10 @@ function App() {
     const { name, value } = e.target;
     let finalValue = value;
 
-    // Si el usuario está editando el color, forzamos formato Hexadecimal limpio
     if (name === "colorTema") {
-      // Si no empieza con #, se lo agregamos
       if (!value.startsWith("#")) {
         finalValue = "#" + value;
       }
-      // Limitamos a 7 caracteres (# + 6 hex) para evitar errores
       finalValue = finalValue.substring(0, 7);
     }
 
@@ -84,12 +89,21 @@ END:VCARD`;
     document.body.removeChild(link);
   };
 
+  // --- URL INTELIGENTE PARA COMPARTIR ---
+  // Construimos la URL base y le agregamos el parámetro para saltar login
+  const baseUrl = window.location.origin + window.location.pathname;
+  const urlParaCompartir = `${baseUrl}?vista=publica`;
+  
+  // Generamos el QR con esa URL especial
+  const qrDinamicUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urlParaCompartir)}`;
+  const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(config.direccion)}`;
+
   // --- COMPARTIR TARJETA ---
   const compartirTarjeta = async () => {
     const shareData = {
       title: `Tarjeta Digital de ${config.nombre}`,
       text: `Hola, te comparto mi contacto profesional de ${config.empresa}.`,
-      url: window.location.href 
+      url: urlParaCompartir // Usamos la URL pública
     };
     try {
       if (navigator.share) {
@@ -102,9 +116,6 @@ END:VCARD`;
       console.error("Error al compartir:", err);
     }
   };
-
-  const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(config.direccion)}`;
-  const qrDinamicUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`;
 
   // Iconos SVG
   const Icons = {
@@ -121,6 +132,7 @@ END:VCARD`;
   };
 
   // --- 3. LOGIN GATE ---
+  // Solo pedimos login si NO es vista pública y NO está logueado
   if (!isLoggedIn) {
     return <Login onLoginSuccess={() => setIsLoggedIn(true)} />;
   }
@@ -129,67 +141,79 @@ END:VCARD`;
   return (
     <div className="contenedor-principal">
       
-      {/* PANEL EDITOR */}
-      <div className="panel-demo">
-        <div className="panel-header-row">
-            <h3>Awna Editor</h3>
-            <button onClick={() => setIsLoggedIn(false)} className="btn-logout">Salir</button>
-        </div>
+      {/* BOTÓN HAMBURGUESA: Solo si NO es vista pública (es decir, es el dueño editando) */}
+      {!esVistaPublica && (
+        <button 
+          className="btn-menu-flotante" 
+          onClick={() => setMenuAbierto(!menuAbierto)}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+      )}
 
-        <p>Personaliza tu tarjeta "Global"</p>
-        <div className="inputs-grid">
-            <div className="input-group"><label>Nombre</label><input type="text" name="nombre" value={config.nombre} onChange={handleChange} /></div>
-            <div className="input-group"><label>Cargo</label><input type="text" name="cargo" value={config.cargo} onChange={handleChange} /></div>
-            <div className="input-group"><label>Empresa</label><input type="text" name="empresa" value={config.empresa} onChange={handleChange} /></div>
-            <div className="input-group full-width"><label>Bio</label><textarea rows="2" name="descripcion" value={config.descripcion} onChange={handleChange}/></div>
-            
-            <div className="titulo-seccion">CONTACTO</div>
-            <div className="input-group"><label>Teléfono</label><input type="text" name="telefono" value={config.telefono} onChange={handleChange} /></div>
-            <div className="input-group"><label>Email</label><input type="text" name="email" value={config.email} onChange={handleChange} /></div>
-            <div className="input-group"><label>Web</label><input type="text" name="web" value={config.web} onChange={handleChange} /></div>
-            <div className="input-group full-width"><label>Dirección</label><input type="text" name="direccion" value={config.direccion} onChange={handleChange} /></div>
+      {/* PANEL EDITOR: Solo lo renderizamos si NO es vista pública */}
+      {!esVistaPublica && (
+        <>
+           {/* Overlay Fondo (Móvil) */}
+           <div 
+             className={`overlay-fondo-movil ${menuAbierto ? 'activo' : ''}`} 
+             onClick={() => setMenuAbierto(false)}
+           ></div>
 
-            <div className="titulo-seccion">REDES</div>
-            <div className="input-group"><label>WhatsApp (ej: 569...)</label><input type="text" name="whatsapp" value={config.whatsapp} onChange={handleChange} /></div>
-            <div className="input-group"><label>Instagram User</label><input type="text" name="instagram" value={config.instagram} onChange={handleChange} /></div>
-            <div className="input-group"><label>TikTok User</label><input type="text" name="tiktok" value={config.tiktok} onChange={handleChange} /></div>
-            <div className="input-group"><label>Facebook User</label><input type="text" name="facebook" value={config.facebook} onChange={handleChange} /></div>
-            <div className="input-group"><label>Twitter/X User</label><input type="text" name="twitter" value={config.twitter} onChange={handleChange} /></div>
-            
-            <div className="input-group full-width">
-  <label>Color de Marca (Hexadecimal)</label>
-  <div style={{ display: 'flex', gap: '8px' }}>
-    {/* Input de texto para escribir el código manualmente */}
-    <input 
-      type="text" 
-      name="colorTema" 
-      value={config.configTema} 
-      onChange={handleChange} 
-      placeholder="#000000"
-      style={{ flex: 1, textTransform: 'uppercase', fontFamily: 'monospace' }}
-    />
-    {/* Selector visual que se sincroniza con el texto */}
-    <input 
-      type="color" 
-      name="colorTema" 
-      value={config.colorTema} 
-      onChange={handleChange} 
-      className="input-color" 
-      style={{ width: '45px', padding: '0', cursor: 'pointer', height: '38px' }}
-    />
-  </div>
-  
-</div>
-        </div>
-      </div>
+           <div className={`panel-demo ${menuAbierto ? 'abierto' : ''}`}>
+            <div className="panel-header-row">
+                <h3>Awna Editor</h3>
+                {/* Botón X para cerrar en móvil */}
+                <button className="btn-cerrar-panel-movil" onClick={() => setMenuAbierto(false)}>✕</button>
+            </div>
 
-      {/* TARJETA */}
+            <p>Personaliza tu tarjeta "Global"</p>
+            <div className="inputs-grid">
+                <div className="input-group"><label>Nombre</label><input type="text" name="nombre" value={config.nombre} onChange={handleChange} /></div>
+                <div className="input-group"><label>Cargo</label><input type="text" name="cargo" value={config.cargo} onChange={handleChange} /></div>
+                <div className="input-group"><label>Empresa</label><input type="text" name="empresa" value={config.empresa} onChange={handleChange} /></div>
+                <div className="input-group full-width"><label>Bio</label><textarea rows="2" name="descripcion" value={config.descripcion} onChange={handleChange}/></div>
+                
+                <div className="titulo-seccion">CONTACTO</div>
+                <div className="input-group"><label>Teléfono</label><input type="text" name="telefono" value={config.telefono} onChange={handleChange} /></div>
+                <div className="input-group"><label>Email</label><input type="text" name="email" value={config.email} onChange={handleChange} /></div>
+                <div className="input-group"><label>Web</label><input type="text" name="web" value={config.web} onChange={handleChange} /></div>
+                <div className="input-group full-width"><label>Dirección</label><input type="text" name="direccion" value={config.direccion} onChange={handleChange} /></div>
+
+                <div className="titulo-seccion">REDES</div>
+                <div className="input-group"><label>WhatsApp (ej: 569...)</label><input type="text" name="whatsapp" value={config.whatsapp} onChange={handleChange} /></div>
+                <div className="input-group"><label>Instagram User</label><input type="text" name="instagram" value={config.instagram} onChange={handleChange} /></div>
+                <div className="input-group"><label>TikTok User</label><input type="text" name="tiktok" value={config.tiktok} onChange={handleChange} /></div>
+                <div className="input-group"><label>Facebook User</label><input type="text" name="facebook" value={config.facebook} onChange={handleChange} /></div>
+                <div className="input-group"><label>Twitter/X User</label><input type="text" name="twitter" value={config.twitter} onChange={handleChange} /></div>
+                
+                <div className="input-group full-width">
+                  <label>Color de Marca (Hex)</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input type="text" name="colorTema" value={config.configTema} onChange={handleChange} placeholder="#000000" style={{ flex: 1, textTransform: 'uppercase', fontFamily: 'monospace' }}/>
+                    <input type="color" name="colorTema" value={config.colorTema} onChange={handleChange} className="input-color" style={{ width: '45px', padding: '0', cursor: 'pointer', height: '38px' }}/>
+                  </div>
+                </div>
+            </div>
+
+            {/* Botón Salir dentro del panel */}
+            <button onClick={() => setIsLoggedIn(false)} className="btn-logout" style={{marginTop: '20px', width: '100%'}}>Cerrar Sesión</button>
+          </div>
+        </>
+      )}
+
+      {/* TARJETA VIRTUAL */}
       <div className="tarjeta-virtual">
         
         {/* Banner */}
         <input type="file" ref={bannerInputRef} hidden accept="image/*" onChange={(e) => handleImageUpload(e, 'bannerFondo')}/>
-        <div className="banner-superior editable-area" style={{ backgroundImage: `url(${config.bannerFondo})` }} onClick={() => bannerInputRef.current.click()}>
-            <div className="overlay-editar"><span>📷 Cambiar</span></div>
+        {/* Deshabilitamos click si es vista pública (pointerEvents: none en el estilo o condicional en onClick) */}
+        <div 
+          className="banner-superior editable-area" 
+          style={{ backgroundImage: `url(${config.bannerFondo})`, cursor: esVistaPublica ? 'default' : 'pointer' }} 
+          onClick={() => !esVistaPublica && bannerInputRef.current.click()}
+        >
+            {!esVistaPublica && <div className="overlay-editar"><span>📷 Cambiar</span></div>}
             <div className="onda-banner">
                 <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
                     <path fill="#ffffff" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
@@ -207,13 +231,17 @@ END:VCARD`;
             </div>
 
             <input type="file" ref={fotoInputRef} hidden accept="image/*" onChange={(e) => handleImageUpload(e, 'fotoPerfil')}/>
-            <div className="contenedor-foto editable-area-round" onClick={() => fotoInputRef.current.click()}>
+            <div 
+              className="contenedor-foto editable-area-round" 
+              style={{ cursor: esVistaPublica ? 'default' : 'pointer' }}
+              onClick={() => !esVistaPublica && fotoInputRef.current.click()}
+            >
                 <img src={config.fotoPerfil} alt="Perfil" className="foto-perfil" />
-                <div className="overlay-editar-round"><span>📷</span></div>
+                {!esVistaPublica && <div className="overlay-editar-round"><span>📷</span></div>}
             </div>
         </div>
 
-        {/* Redes Horizontales (Solo si existen) */}
+        {/* Redes Horizontales */}
         {(config.whatsapp || config.instagram || config.tiktok || config.facebook || config.twitter) && (
           <div className="redes-horizontales">
               {config.whatsapp && <a href={`https://wa.me/${config.whatsapp}`} target="_blank" rel="noreferrer" className="btn-social-circle social-whatsapp">{Icons.whatsapp}</a>}
@@ -224,7 +252,7 @@ END:VCARD`;
           </div>
         )}
 
-        {/* Lista Contactos (Solo si existen) */}
+        {/* Lista Contactos */}
         <div className="lista-contacto">
           {config.telefono && (
             <a href={`tel:${config.telefono}`} className="item-contacto">
@@ -276,30 +304,24 @@ END:VCARD`;
             Guardar Contacto
           </button>
           <button className="btn-compartir-circular" onClick={compartirTarjeta}>
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
           </button>
         </div>
 
-       {/* --- SECCIÓN QR RE-DISEÑADA --- */}
+       {/* --- SECCIÓN QR --- */}
         <div style={{ padding: '0 20px 25px 20px' }}>
-          
-          {/* BOTÓN LIMPIO PARA ABRIR QR */}
           <button className="btn-ver-qr" onClick={() => setMostrarQR(true)}>
-             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><path d="M3 14h7v7H3z"></path></svg>
-             Ver Código QR
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><path d="M3 14h7v7H3z"></path></svg>
+              Ver Código QR
           </button>
-
         </div>
 
-        {/* --- MODAL FLOTANTE (ESTO VA DENTRO DE TARJETA-VIRTUAL PERO FLOTA) --- */}
+        {/* --- MODAL QR --- */}
         {mostrarQR && (
           <div className="qr-overlay" onClick={() => setMostrarQR(false)}>
-            {/* stopPropagation evita que al hacer click en el QR se cierre */}
             <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
                 <h3 className="qr-titulo-modal">Escanea para conectar</h3>
-                
                 <img src={qrDinamicUrl} alt="QR Code" className="imagen-qr-modal" />
-                
                 <button className="btn-cerrar-modal" onClick={() => setMostrarQR(false)}>
                   Cerrar
                 </button>
