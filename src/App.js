@@ -6,6 +6,7 @@ function App() {
   
   // --- 1. ESTADO DE AUTENTICACIÓN ---
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
+  const [mostrarQR, setMostrarQR] = useState(false);
 
   // --- 2. CONFIGURACIÓN DE LA TARJETA ---
   const bannerInputRef = useRef(null);
@@ -279,14 +280,35 @@ END:VCARD`;
           </button>
         </div>
 
-        {/* --- ASÍ DEBE QUEDAR (Copia y pega esto) --- */}
-        <div className="footer-qr">
-           <img src={qrDinamicUrl} alt="QR" className="imagen-qr" />
+       {/* --- SECCIÓN QR RE-DISEÑADA --- */}
+        <div style={{ padding: '0 20px 25px 20px' }}>
+          
+          {/* BOTÓN LIMPIO PARA ABRIR QR */}
+          <button className="btn-ver-qr" onClick={() => setMostrarQR(true)}>
+             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><path d="M3 14h7v7H3z"></path></svg>
+             Ver Código QR
+          </button>
+
         </div>
 
-      </div>
-    </div>
-  );
-}
+        {/* --- MODAL FLOTANTE (ESTO VA DENTRO DE TARJETA-VIRTUAL PERO FLOTA) --- */}
+        {mostrarQR && (
+          <div className="qr-overlay" onClick={() => setMostrarQR(false)}>
+            {/* stopPropagation evita que al hacer click en el QR se cierre */}
+            <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
+                <h3 className="qr-titulo-modal">Escanea para conectar</h3>
+                
+                <img src={qrDinamicUrl} alt="QR Code" className="imagen-qr-modal" />
+                
+                <button className="btn-cerrar-modal" onClick={() => setMostrarQR(false)}>
+                  Cerrar
+                </button>
+            </div>
+          </div>
+        )}
 
+      </div>
+    </div>      
+  );  
+}
 export default App;
