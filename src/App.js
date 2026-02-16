@@ -15,7 +15,17 @@ function App() {
   const [menuAbierto, setMenuAbierto] = useState(false);
 
   // --- NUEVO: ESTADO DE BLOQUEO DE TARJETA ---
-  const [tarjetaActiva, setTarjetaActiva] = useState(true);
+  // --- NUEVO: ESTADO DE BLOQUEO CON MEMORIA ---
+  // 1. Al cargar, revisamos si ya estaba bloqueada en la memoria del navegador
+  const [tarjetaActiva, setTarjetaActiva] = useState(() => {
+    const guardado = localStorage.getItem('tarjetaActiva');
+    return guardado === 'false' ? false : true;
+  });
+
+  // 2. Cada vez que cambies el switch, lo guardamos en la memoria
+  React.useEffect(() => {
+    localStorage.setItem('tarjetaActiva', tarjetaActiva);
+  }, [tarjetaActiva]);
 
   // --- 2. CONFIGURACIÓN DE LA TARJETA ---
   const bannerInputRef = useRef(null);
