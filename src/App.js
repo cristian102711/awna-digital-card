@@ -9,12 +9,13 @@ function App() {
   const esVistaPublica = queryParams.get('vista') === 'publica';
 
   // --- 1. ESTADOS ---
-  // Si es vista pública, auto-logueamos al usuario.
+  // Si es vista pública, auto-logueamos al usuario (pero restringido)
   const [isLoggedIn, setIsLoggedIn] = useState(esVistaPublica); 
   const [mostrarQR, setMostrarQR] = useState(false);
-  
-  // Estado para el menú hamburguesa en móvil
   const [menuAbierto, setMenuAbierto] = useState(false);
+
+  // --- NUEVO: ESTADO DE BLOQUEO DE TARJETA ---
+  const [tarjetaActiva, setTarjetaActiva] = useState(true);
 
   // --- 2. CONFIGURACIÓN DE LA TARJETA ---
   const bannerInputRef = useRef(null);
@@ -89,21 +90,18 @@ END:VCARD`;
     document.body.removeChild(link);
   };
 
-  // --- URL INTELIGENTE PARA COMPARTIR ---
-  // Construimos la URL base y le agregamos el parámetro para saltar login
+  // --- URL INTELIGENTE ---
   const baseUrl = window.location.origin + window.location.pathname;
   const urlParaCompartir = `${baseUrl}?vista=publica`;
-  
-  // Generamos el QR con esa URL especial
   const qrDinamicUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urlParaCompartir)}`;
   const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(config.direccion)}`;
 
-  // --- COMPARTIR TARJETA ---
+  // --- COMPARTIR ---
   const compartirTarjeta = async () => {
     const shareData = {
       title: `Tarjeta Digital de ${config.nombre}`,
       text: `Hola, te comparto mi contacto profesional de ${config.empresa}.`,
-      url: urlParaCompartir // Usamos la URL pública
+      url: urlParaCompartir
     };
     try {
       if (navigator.share) {
@@ -137,11 +135,24 @@ END:VCARD`;
     return <Login onLoginSuccess={() => setIsLoggedIn(true)} />;
   }
 
-  // --- 4. APP MAIN ---
+  // --- 4. BLOQUEO DE TARJETA (Solo para visitantes) ---
+  if (esVistaPublica && !tarjetaActiva) {
+    return (
+      <div className="pantalla-bloqueada-container">
+        <div className="icono-candado">🔒</div>
+        <h2 className="titulo-bloqueado">Perfil Suspendido</h2>
+        <p className="texto-bloqueado">
+          El propietario ha desactivado temporalmente esta tarjeta digital. Por favor, intenta de nuevo más tarde.
+        </p>
+      </div>
+    );
+  }
+
+  // --- 5. APP MAIN (Editor + Tarjeta) ---
   return (
     <div className="contenedor-principal">
       
-      {/* BOTÓN HAMBURGUESA: Solo si NO es vista pública (es decir, es el dueño editando) */}
+      {/* BOTÓN HAMBURGUESA: Solo si es el dueño */}
       {!esVistaPublica && (
         <button 
           className="btn-menu-flotante" 
@@ -151,10 +162,9 @@ END:VCARD`;
         </button>
       )}
 
-      {/* PANEL EDITOR: Solo lo renderizamos si NO es vista pública */}
+      {/* PANEL EDITOR */}
       {!esVistaPublica && (
         <>
-           {/* Overlay Fondo (Móvil) */}
            <div 
              className={`overlay-fondo-movil ${menuAbierto ? 'activo' : ''}`} 
              onClick={() => setMenuAbierto(false)}
@@ -163,11 +173,20 @@ END:VCARD`;
            <div className={`panel-demo ${menuAbierto ? 'abierto' : ''}`}>
             <div className="panel-header-row">
                 <h3>Awna Editor</h3>
-                {/* Botón X para cerrar en móvil */}
                 <button className="btn-cerrar-panel-movil" onClick={() => setMenuAbierto(false)}>✕</button>
             </div>
 
-            <p>Personaliza tu tarjeta "Global"</p>
+            {/* --- NUEVO INTERRUPTOR DE BLOQUEO --- */}
+            <p style={{marginBottom: '5px'}}>Estado de Visibilidad</p>
+            <button 
+              className={`switch-estado ${tarjetaActiva ? 'switch-activo' : 'switch-inactivo'}`}
+              onClick={() => setTarjetaActiva(!tarjetaActiva)}
+            >
+              {tarjetaActiva ? '🟢 Visible al Público' : '🔴 Bloqueada (Privada)'}
+            </button>
+            <hr style={{borderColor: '#334155', margin: '15px 0', opacity: 0.3}}/>
+
+            <p>Personaliza tu tarjeta</p>
             <div className="inputs-grid">
                 <div className="input-group"><label>Nombre</label><input type="text" name="nombre" value={config.nombre} onChange={handleChange} /></div>
                 <div className="input-group"><label>Cargo</label><input type="text" name="cargo" value={config.cargo} onChange={handleChange} /></div>
@@ -181,14 +200,14 @@ END:VCARD`;
                 <div className="input-group full-width"><label>Dirección</label><input type="text" name="direccion" value={config.direccion} onChange={handleChange} /></div>
 
                 <div className="titulo-seccion">REDES</div>
-                <div className="input-group"><label>WhatsApp (ej: 569...)</label><input type="text" name="whatsapp" value={config.whatsapp} onChange={handleChange} /></div>
-                <div className="input-group"><label>Instagram User</label><input type="text" name="instagram" value={config.instagram} onChange={handleChange} /></div>
-                <div className="input-group"><label>TikTok User</label><input type="text" name="tiktok" value={config.tiktok} onChange={handleChange} /></div>
-                <div className="input-group"><label>Facebook User</label><input type="text" name="facebook" value={config.facebook} onChange={handleChange} /></div>
-                <div className="input-group"><label>Twitter/X User</label><input type="text" name="twitter" value={config.twitter} onChange={handleChange} /></div>
+                <div className="input-group"><label>WhatsApp</label><input type="text" name="whatsapp" value={config.whatsapp} onChange={handleChange} /></div>
+                <div className="input-group"><label>Instagram</label><input type="text" name="instagram" value={config.instagram} onChange={handleChange} /></div>
+                <div className="input-group"><label>TikTok</label><input type="text" name="tiktok" value={config.tiktok} onChange={handleChange} /></div>
+                <div className="input-group"><label>Facebook</label><input type="text" name="facebook" value={config.facebook} onChange={handleChange} /></div>
+                <div className="input-group"><label>Twitter/X</label><input type="text" name="twitter" value={config.twitter} onChange={handleChange} /></div>
                 
                 <div className="input-group full-width">
-                  <label>Color de Marca (Hex)</label>
+                  <label>Color de Marca</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input type="text" name="colorTema" value={config.configTema} onChange={handleChange} placeholder="#000000" style={{ flex: 1, textTransform: 'uppercase', fontFamily: 'monospace' }}/>
                     <input type="color" name="colorTema" value={config.colorTema} onChange={handleChange} className="input-color" style={{ width: '45px', padding: '0', cursor: 'pointer', height: '38px' }}/>
@@ -196,7 +215,6 @@ END:VCARD`;
                 </div>
             </div>
 
-            {/* Botón Salir dentro del panel */}
             <button onClick={() => setIsLoggedIn(false)} className="btn-logout" style={{marginTop: '20px', width: '100%'}}>Cerrar Sesión</button>
           </div>
         </>
@@ -205,9 +223,13 @@ END:VCARD`;
       {/* TARJETA VIRTUAL */}
       <div className="tarjeta-virtual">
         
+        {/* Aviso visual para el dueño si la tiene bloqueada */}
+        {!esVistaPublica && !tarjetaActiva && (
+          <div className="aviso-modo-privado">⚠️ MODO PRIVADO ACTIVO (Nadie ve esto)</div>
+        )}
+
         {/* Banner */}
         <input type="file" ref={bannerInputRef} hidden accept="image/*" onChange={(e) => handleImageUpload(e, 'bannerFondo')}/>
-        {/* Deshabilitamos click si es vista pública (pointerEvents: none en el estilo o condicional en onClick) */}
         <div 
           className="banner-superior editable-area" 
           style={{ backgroundImage: `url(${config.bannerFondo})`, cursor: esVistaPublica ? 'default' : 'pointer' }} 
@@ -241,7 +263,7 @@ END:VCARD`;
             </div>
         </div>
 
-        {/* Redes Horizontales */}
+        {/* Redes */}
         {(config.whatsapp || config.instagram || config.tiktok || config.facebook || config.twitter) && (
           <div className="redes-horizontales">
               {config.whatsapp && <a href={`https://wa.me/${config.whatsapp}`} target="_blank" rel="noreferrer" className="btn-social-circle social-whatsapp">{Icons.whatsapp}</a>}
@@ -264,7 +286,6 @@ END:VCARD`;
               <div className="flecha-simple">{Icons.arrow}</div>
             </a>
           )}
-
           {config.email && (
             <a href={`mailto:${config.email}`} className="item-contacto">
               <div className="icono-circulo" style={{backgroundColor: config.colorTema}}>{Icons.mail}</div>
@@ -275,7 +296,6 @@ END:VCARD`;
               <div className="flecha-simple">{Icons.arrow}</div>
             </a>
           )}
-
           {config.direccion && (
             <a href={mapLink} target="_blank" rel="noreferrer" className="item-contacto">
               <div className="icono-circulo" style={{backgroundColor: config.colorTema}}>{Icons.map}</div>
@@ -286,7 +306,6 @@ END:VCARD`;
               <div className="flecha-simple">{Icons.arrow}</div>
             </a>
           )}
-
           {config.web && (
             <a href={`https://${config.web}`} target="_blank" rel="noreferrer" className="item-contacto">
               <div className="icono-circulo" style={{backgroundColor: config.colorTema}}>{Icons.web}</div>
@@ -308,7 +327,7 @@ END:VCARD`;
           </button>
         </div>
 
-       {/* --- SECCIÓN QR --- */}
+       {/* SECCIÓN QR */}
         <div style={{ padding: '0 20px 25px 20px' }}>
           <button className="btn-ver-qr" onClick={() => setMostrarQR(true)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><path d="M3 14h7v7H3z"></path></svg>
@@ -316,7 +335,7 @@ END:VCARD`;
           </button>
         </div>
 
-        {/* --- MODAL QR --- */}
+        {/* MODAL QR */}
         {mostrarQR && (
           <div className="qr-overlay" onClick={() => setMostrarQR(false)}>
             <div className="qr-modal" onClick={(e) => e.stopPropagation()}>

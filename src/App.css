@@ -472,3 +472,44 @@
     box-shadow: 5px 0 25px rgba(0,0,0,0.5);
   }
 }
+
+
+/* --- ESTILOS DE BLOQUEO Y SWITCH --- */
+
+/* Interruptor en el Editor */
+.switch-estado {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.switch-activo { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.switch-inactivo { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+/* Pantalla que ve el visitante cuando está bloqueada */
+.pantalla-bloqueada-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #f8fafc;
+  color: #64748b;
+  text-align: center;
+  padding: 20px;
+}
+.icono-candado { font-size: 60px; margin-bottom: 20px; opacity: 0.5; }
+.titulo-bloqueado { font-size: 24px; color: #334155; margin-bottom: 10px; font-weight: 800; }
+.texto-bloqueado { max-width: 300px; font-size: 14px; line-height: 1.5; }
+
+/* Aviso flotante para el dueño cuando edita en modo bloqueado */
+.aviso-modo-privado {
+  background: #ef4444; color: white;
+  text-align: center; padding: 5px; font-size: 11px; font-weight: 700;
+  border-radius: 4px; margin-bottom: 10px;
+}
